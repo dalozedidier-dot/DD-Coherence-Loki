@@ -1,0 +1,52 @@
+name: dd-smoke
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r dd_coherence_tool/requirements.txt
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          PYTHONPATH=dd_coherence_tool pytest -q dd_coherence_tool/tests
+
+      - name: Run DD on synthetic CSV
+        run: |
+          mkdir -p _ci_out
+          python - <<'PY'
+          import numpy as np
+          import pandas as pd
+          np.random.seed(0)
+          x = np.r_[np.random.normal(0, 1, 200), np.random.normal(3, 1.5, 200)]
+          y = np.r_[np.random.normal(0, 1, 200), np.random.normal(0, 1, 200)]
+          pd.DataFrame({'x': x, 'y': y}).to_csv('_ci_out/sample.csv', index=False)
+          PY
+          python dd_coherence_tool/scripts/run_dd.py \
+            --input _ci_out/sample.csv \
+            --outdir _ci_out/out_dd \
+            --cols x,y \
+            --no-components
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dd_outputs
+          path: _ci_out/out_dd
