@@ -16,6 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare _ci_out early
+        run: |
+          mkdir -p _ci_out
+          echo "init" > _ci_out/_keep.txt
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -28,30 +33,67 @@ jobs:
           pip install -r dd_coherence_tool/requirements.txt
           pip install pytest
 
-      - name: Run band_suite with 1 retry
+      - name: Show candidate entrypoints
         run: |
-          set -e
+          echo "Repo root:"
+          ls -la
+          echo "scripts/ (if exists):"
+          ls -la scripts || true
+          echo "Search band-related files:"
+          find . -maxdepth 3 -type f \( -iname "*band*" -o -iname "*suite*" \) | sort || true
+
+      - name: Run band_suite with retry + logs
+        run: |
+          set -euo pipefail
+
+          # Détection d'un entrypoint plausible (à adapter si ton script a un autre nom)
+          if [ -f scripts/ci_band_suite.py ]; then
+            CMD="python scripts/ci_band_suite.py"
+          elif [ -f dd_coherence_tool/scripts/ci_band_suite.py ]; then
+            CMD="python dd_coherence_tool/scripts/ci_band_suite.py"
+          elif [ -f scripts/ci_band_suite.sh ]; then
+            CMD="bash scripts/ci_band_suite.sh"
+          else
+            echo "Entrypoint band_suite introuvable."
+            echo "Corrige CMD dans ce workflow avec la vraie commande de ton repo."
+            exit 2
+          fi
+
           attempt=1
           max=2
-          until [ $attempt -gt $max ]
-          do
+          while [ $attempt -le $max ]; do
             echo "band_suite attempt $attempt/$max"
-            python scripts/ci_band_suite.py && break
+            set +e
+            ( $CMD ) 2>&1 | tee "_ci_out/band_suite_attempt_${attempt}.log"
+            rc=${PIPESTATUS[0]}
+            set -e
+
+            if [ $rc -eq 0 ]; then
+              echo "band_suite OK"
+              break
+            fi
+
+            echo "band_suite failed (rc=$rc)"
             attempt=$((attempt+1))
             if [ $attempt -le $max ]; then
               echo "Retry in 10s"
               sleep 10
+            else
+              echo "band_suite failed after $max attempts"
+              exit 1
             fi
           done
-          if [ $attempt -gt $max ]; then
-            echo "band_suite failed after $max attempts"
-            exit 1
-          fi
 
-      - name: Collect logs and artifacts
+      - name: Write environment meta
         if: always()
         run: |
-          mkdir -p _ci_out
+          {
+            echo "date=$(date -Iseconds)"
+            echo "python=$(python -V 2>&1)"
+            echo "pip=$(pip -V 2>&1)"
+            echo "pwd=$(pwd)"
+          } > _ci_out/meta.txt
+          pip freeze > _ci_out/pip_freeze.txt || true
 
       - uses: actions/upload-artifact@v4
         if: always()
