@@ -43,8 +43,6 @@ jobs:
             --input _ci_out/sample.csv \
             --outdir _ci_out/out_dd \
             --cols x,y \
-            --no-components
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

@@ -1,0 +1,19 @@
+"""'Job""","""'Workflow""","""'Failure rate""","""'Avg run time""","""'Avg queue time""","""'Runner type""","""'Runner labels""","""'Job runs"""
+"""'collector-tests""","""'.github/workflows/test_collector.yml""",47.50,31490,2005,"""'hosted""","""'ubuntu-latest""",40
+"""'build (3.9)""","""'.github/workflows/python-package.yml""",100.00,21523,2072,"""'hosted""","""'ubuntu-latest""",3
+"""'smoke""","""'.github/workflows/smoke_phio.yml""",0.00,21068,1885,"""'hosted""","""'ubuntu-latest""",9
+"""'band_suite""","""'.github/workflows/phi_ci.yml""",100.00,16053,2072,"""'hosted""","""'ubuntu-latest""",1
+"""'smoke""","""'.github/workflows/phi_ci.yml""",5.56,15414,2098,"""'hosted""","""'ubuntu-latest""",18
+"""'build""","""'.github/workflows/main.yml""",72.22,14145,2080,"""'hosted""","""'ubuntu-latest""",18
+"""'build""","""'.github/workflows/python-app.yml""",4.76,13613,2015,"""'hosted""","""'ubuntu-latest""",21
+"""'contract-validation""","""'.github/workflows/phi_ci.yml""",42.99,12623,2026,"""'hosted""","""'ubuntu-latest""",107
+"""'build""","""'.github/workflows/python-package.yml""",100.00,11465,2258,"""'hosted""","""'ubuntu-latest""",2
+"""'build (3.10)""","""'.github/workflows/python-package.yml""",100.00,11067,2290,"""'hosted""","""'ubuntu-latest""",3
+"""'test""","""'.github/workflows/ci.yml""",87.18,10946,2291,"""'hosted""","""'ubuntu-latest""",39
+"""'build (3.11)""","""'.github/workflows/python-package.yml""",100.00,10557,2044,"""'hosted""","""'ubuntu-latest""",3
+"""'baseline""","""'.github/workflows/generate_baseline.yml""",30.00,10457,2059,"""'hosted""","""'ubuntu-latest""",10
+"""'ci""","""'.github/workflows/phi_ci.yml""",74.07,9722,2637,"""'hosted""","""'ubuntu-latest""",27
+"""'baseline""","""'.github/workflows/generate_contract_baseline.yml""",100.00,9099,2070,"""'hosted""","""'ubuntu-latest""",3
+"""'generate-baseline""","""'.github/workflows/generate_baseline.yml""",0.00,6022,2126,"""'hosted""","""'ubuntu-latest""",1
+"""'debug""","""'.github/workflows/collector_debug.yml""",0.00,5202,1703,"""'hosted""","""'ubuntu-latest""",1
+"""'smoke""","""'.github/workflows/smoke.yml""",92.00,5137,2086,"""'hosted""","""'ubuntu-latest""",25
