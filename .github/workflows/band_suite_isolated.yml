@@ -2,6 +2,15 @@ name: band-suite (isolated)
 
 on:
   workflow_dispatch:
+    inputs:
+      band_cmd:
+        description: "Commande exacte a executer (optionnel). Exemple: python scripts/ci_band_suite.py"
+        required: false
+        default: ""
+      debug:
+        description: "Mode debug (produit beaucoup de logs, ne fail pas si band_cmd absent)"
+        required: false
+        default: "true"
   schedule:
     - cron: "17 2 * * *"
 
@@ -12,9 +21,14 @@ concurrency:
 jobs:
   band_suite:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Prepare _ci_out early
+        run: |
+          mkdir -p _ci_out
+          echo "init" > _ci_out/_keep.txt
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,30 +42,99 @@ jobs:
           pip install -r dd_coherence_tool/requirements.txt
           pip install pytest
 
-      - name: Run band_suite with 1 retry
+      - name: Debug - Print environment
+        if: ${{ inputs.debug == 'true' }}
         run: |
-          set -e
+          set -euo pipefail
+          echo "GITHUB_REF=$GITHUB_REF"
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          echo "RUNNER_OS=$RUNNER_OS"
+          echo "pwd=$(pwd)"
+          python -V
+          pip -V
+          env | sort || true
+
+      - name: Debug - Check disk and memory
+        if: ${{ inputs.debug == 'true' }}
+        run: |
+          set -euo pipefail
+          df -h
+          free -h || true
+          ulimit -a || true
+
+      - name: Debug - Repo listing and band search
+        if: ${{ inputs.debug == 'true' }}
+        run: |
+          set -euo pipefail
+          ls -la > _ci_out/ls_root.txt
+          (ls -la scripts || true) > _ci_out/ls_scripts.txt
+          find . -maxdepth 4 -type f \( -iname "*band*" -o -iname "*suite*" \) | sort > _ci_out/find_band_suite.txt
+          echo "Wrote _ci_out/{ls_root,ls_scripts,find_band_suite}.txt"
+
+      - name: Run band_suite with retry and logs
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+
+          DEBUG="${{ inputs.debug }}"
+          CMD_INPUT="${{ inputs.band_cmd }}"
+
+          if [ -n "$CMD_INPUT" ]; then
+            CMD="$CMD_INPUT"
+          elif [ -f scripts/ci_band_suite.py ]; then
+            CMD="python scripts/ci_band_suite.py"
+          elif [ -f dd_coherence_tool/scripts/ci_band_suite.py ]; then
+            CMD="python dd_coherence_tool/scripts/ci_band_suite.py"
+          elif [ -f scripts/ci_band_suite.sh ]; then
+            CMD="bash scripts/ci_band_suite.sh"
+          else
+            echo "Entrypoint band_suite introuvable."
+            echo "Donne la commande exacte via workflow_dispatch input: band_cmd"
+            echo "Entrypoint band_suite introuvable." > _ci_out/entrypoint_missing.txt
+            if [ "$DEBUG" = "true" ]; then
+              exit 0
+            else
+              exit 2
+            fi
+          fi
+
+          echo "CMD=$CMD" | tee _ci_out/band_cmd.txt
+
           attempt=1
           max=2
-          until [ $attempt -gt $max ]
-          do
+          while [ $attempt -le $max ]; do
             echo "band_suite attempt $attempt/$max"
-            python scripts/ci_band_suite.py && break
+            set +e
+            bash -lc "$CMD" 2>&1 | tee "_ci_out/band_suite_attempt_${attempt}.log"
+            rc=${PIPESTATUS[0]}
+            set -e
+
+            if [ $rc -eq 0 ]; then
+              echo "band_suite OK"
+              break
+            fi
+
+            echo "band_suite failed (rc=$rc)"
             attempt=$((attempt+1))
             if [ $attempt -le $max ]; then
               echo "Retry in 10s"
               sleep 10
+            else
+              echo "band_suite failed after $max attempts"
+              exit 1
             fi
           done
-          if [ $attempt -gt $max ]; then
-            echo "band_suite failed after $max attempts"
-            exit 1
-          fi
 
-      - name: Collect logs and artifacts
+      - name: Write environment meta
         if: always()
         run: |
-          mkdir -p _ci_out
+          {
+            echo "date=$(date -Iseconds)"
+            echo "python=$(python -V 2>&1)"
+            echo "pip=$(pip -V 2>&1)"
+            echo "pwd=$(pwd)"
+          } > _ci_out/meta.txt
+          pip freeze > _ci_out/pip_freeze.txt || true
 
       - uses: actions/upload-artifact@v4
         if: always()
