@@ -1,4 +1,4 @@
-# DD Cohérence IA – Repo prêt à pousser
+# DD Cohérence – Repo prêt à pousser
 
 Ce dossier est un dépôt complet. Tu peux le pousser tel quel sur GitHub.
 
