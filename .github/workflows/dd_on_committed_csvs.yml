@@ -1,0 +1,35 @@
+name: dd-on-committed-csvs
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r dd_coherence_tool/requirements.txt
+
+      - name: Run DD batch on committed CSVs
+        run: |
+          mkdir -p _ci_out/dd_runs
+          python dd_coherence_tool/scripts/run_dd_batch.py                 --outdir _ci_out/dd_runs                 --config dd_params.small.json                 dd_coherence_tool/1.csv                 dd_coherence_tool/2.csv                 dd_coherence_tool/3.csv
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dd_runs
+          path: _ci_out/dd_runs
