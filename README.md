@@ -8,11 +8,11 @@ Ce dossier est un dépôt complet. Tu peux le pousser tel quel sur GitHub.
    - dd_smoke.yml : smoke test sur un CSV synthétique, produit aussi dd_components.csv.gz
    - dd_on_committed_csvs.yml : exécute DD sur dd_coherence_tool/1.csv, 2.csv, 3.csv
 
-## Important sur tes CSV actuels
-Les fichiers 1.csv, 2.csv, 3.csv que tu as déposés ici sont des tableaux de synthèse (1 ligne pour certains).
-DD nécessite une longueur minimale. Un CSV avec 1 ligne sera automatiquement marqué "skipped".
+## Données de test (non-skipped)
+Les fichiers `dd_coherence_tool/1.csv`, `2.csv`, `3.csv` contiennent désormais des **séries temporelles synthétiques** (N≥120) avec **ruptures de régime** afin de produire des sorties DD **non-skipped** en local et en CI.
 
-Pour que DD ait du sens, il faut une série (plusieurs points) et un ordre (temps ou séquence).
+- Les anciennes versions "tableau de synthèse / trop courtes" sont conservées sous `*_orig.csv`.
+- Les variantes `*_uuid.csv` restent disponibles pour tests de renommage/identifiants.
 
 ## Lancer en local
 ```bash
